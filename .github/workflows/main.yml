@@ -1,7 +1,7 @@
 name: Update Server Status
 on:
   schedule:
-    - cron: '*/5 * * * *' # Ajaa skriptin 5 minuutin välein
+    - cron: '*/1 * * * *' # Ajaa skriptin 1 minuutin välein
   workflow_dispatch: # Sallii manuaalisen käynnistyksen
 
 jobs:
