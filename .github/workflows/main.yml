@@ -1,24 +1,29 @@
 name: Update Server Status
+
 on:
   schedule:
-    - cron: '*/1 * * * *' # Ajaa skriptin 1 minuutin välein
-  workflow_dispatch: # Sallii manuaalisen käynnistyksen
+    - cron: '*/1 * * * *'   # Ajaa skriptin 1 minuutin välein
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+
       - name: Install dependencies
         run: pip install requests
+
       - name: Run script
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           MESSAGE_ID: ${{ secrets.MESSAGE_ID }}
           BATTLEMETRICS_SERVER_ID: ${{ secrets.BATTLEMETRICS_SERVER_ID }}
-        run: python status.py
+        run: python -u status.py
