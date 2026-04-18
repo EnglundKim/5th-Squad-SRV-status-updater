@@ -4,11 +4,11 @@ from datetime import datetime
 
 # Haetaan tiedot GitHub Secretsistä
 WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK")
-MESSAGE_ID = os.getenv("MESSAGE_ID").strip()
+MESSAGE_ID = os.getenv("MESSAGE_ID")
 SERVER_ID = os.getenv("BATTLEMETRICS_SERVER_ID")
 
 def get_server_data():
-    # KORJATTU: Poistettu ylimääräiset tähdet ja varmistettu oikea URL
+    # URL on nyt täysin puhdas
     url = f"https://battlemetrics.com{SERVER_ID}"
     response = requests.get(url).json()
     
@@ -28,9 +28,9 @@ def get_server_data():
     }
 
 def update_discord(data):
-    # KORJATTU: Puhdistettu URL-osoitteen käsittely (poistettu virheellinen rstrip/split yhdistelmä)
-    base_url = WEBHOOK_URL.split('?')[0].rstrip('/')
-    edit_url = f"{base_url}/messages/{MESSAGE_ID}"
+    # Puhdistetaan webhook-osoite mahdollisista parametreista
+    clean_webhook = WEBHOOK_URL.split('?')[0].rstrip('/')
+    edit_url = f"{clean_webhook}/messages/{MESSAGE_ID}"
     
     payload = {
         "embeds": [{
@@ -45,7 +45,7 @@ def update_discord(data):
             "image": {
                 "url": "https://discordapp.com&"
             },
-            "footer": {"text": "Updated"},
+            "footer": {"text": "Päivitetty GitHub Actionsilla"},
             "timestamp": datetime.utcnow().isoformat()
         }]
     }
@@ -61,6 +61,10 @@ def update_discord(data):
 
 if __name__ == "__main__":
     try:
+        if not MESSAGE_ID or not WEBHOOK_URL:
+            print("❌ Virhe: MESSAGE_ID tai DISCORD_WEBHOOK puuttuu Secretheistä!")
+            exit(1)
+        
         server_info = get_server_data()
         update_discord(server_info)
     except Exception as e:
