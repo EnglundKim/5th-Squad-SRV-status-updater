@@ -1,5 +1,8 @@
 name: Update Server Status
 
+permissions:
+  contents: read
+
 on:
   schedule:
     - cron: '*/1 * * * *'   # Ajaa skriptin 1 minuutin välein
