@@ -26,7 +26,7 @@ jobs:
 
       - name: Run script
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          MESSAGE_ID: ${{ secrets.MESSAGE_ID }}
+          DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
+          MESSAGE_IDS: ${{ secrets.MESSAGE_IDS }}
           BATTLEMETRICS_SERVER_ID: ${{ secrets.BATTLEMETRICS_SERVER_ID }}
         run: python -u status.py
