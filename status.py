@@ -1,49 +1,57 @@
-import requests
-import os
+import { axios } from "@pipedream/platform"
 
-WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK")
-MESSAGE_ID = os.getenv("MESSAGE_ID").strip() # strip() poistaa vahinkovälilyönnit
-SERVER_ID = os.getenv("BATTLEMETRICS_SERVER_ID")
+export default defineComponent({
+  props: {
+    data: { type: "data_store" },
+  },
+  async run({ steps, $ }) {
+    const webhookUrl = "https://discord.com/api/webhooks/1494834782402514946/DeXK76KOMyEED4cF-uqtxcXEhepk8-3PBNch9SKEilwkgBcL37H9oxk3mr0SITCWnyHn";
+    
+    // Haetaan alkuperäiset kentät BattleMetrics-viestistä
+    const b = steps.trigger.event.body.embeds[0];
+    const f = b.fields;
 
-def get_server_data():
-    url = f"https://battlemetrics.com{SERVER_ID}"
-    response = requests.get(url).json()
-    
-    attr = response['data']['attributes']
-    name = attr['name']
-    players = attr['players']
-    max_players = attr['maxPlayers']
-    # Squad-palvelimissa on usein myös jono (queue), lisätään se jos mahdollista
-    queue = attr.get('details', {}).get('rust_queued_players', 0) # Esimerkki, Squadilla eri kenttä
-    
-    status = "🟢 Online" if attr['status'] == "online" else "🔴 Offline"
-    return f"**{name}**\n\nTila: {status}\nPelaajat: **{players}/{max_players}**"
+    // Luodaan uusi viesti englanninkielisillä otsikoilla
+    const payload = {
+      embeds: [{
+        title: "Server Status",
+        color: 5814783,
+        fields: [
+          { name: "Server Name", value: f[0].value },
+          { name: "Status", value: f[1].value, inline: true },
+          { name: "Players", value: f[2].value, inline: true },
+          { name: "Map", value: f[3].value }
+        ],
+        image: {
+          url: "https://cdn.discordapp.com/attachments/1494851993154490448/1494852038797037681/5thmrlogo.gif?ex=69e41cf3&is=69e2cb73&hm=34113ebf686b927466e7b834a97188059ac0f84c63dbdf9440534c1d20be5d4a&"
+        },
+        footer: { text: "Updated" },
+        timestamp: new Date()
+      }]
+    };
 
-def update_discord(content):
-    # Varmistetaan että URL on oikeassa muodossa
-    # HUOM: Webhook-URL ei saa päättyä vinoviivaan
-    base_url = WEBHOOK_URL.split('?')[0].rstrip('/')
-    edit_url = f"{base_url}/messages/{MESSAGE_ID}"
-    
-    payload = {
-        "embeds": [{
-            "title": "Palvelimen reaaliaikainen tila",
-            "description": content,
-            "color": 3066993,
-            "footer": {"text": "Päivitetty automaattisesti GitHub Actionsilla"}
-        }]
+    let messageId = await this.data.get("discord_message_id");
+
+    if (!messageId) {
+      const response = await axios($, {
+        method: "POST",
+        url: `${webhookUrl}?wait=true`,
+        data: payload,
+      });
+      await this.data.set("discord_message_id", response.id);
+      return "New message created!";
+    } else {
+      try {
+        await axios($, {
+          method: "PATCH",
+          url: `${webhookUrl}/messages/${messageId}`,
+          data: payload,
+        });
+        return "Message updated!";
+      } catch (error) {
+        await this.data.set("discord_message_id", null);
+        return "Message not found, ID reset.";
+      }
     }
-
-    response = requests.patch(edit_url, json=payload)
-    
-    if response.status_code == 200:
-        print("✅ Viesti päivitetty onnistuneesti!")
-    else:
-        print(f"❌ Virhe päivityksessä: {response.status_code}")
-        print(f"Vastaus: {response.text}")
-        # Tämä aiheuttaa GitHub Actionssiin punaisen valon jos epäonnistuu
-        exit(1) 
-
-if __name__ == "__main__":
-    data = get_server_data()
-    update_discord(data)
+  },
+})
