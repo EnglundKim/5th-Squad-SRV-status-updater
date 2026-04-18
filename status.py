@@ -36,6 +36,9 @@ def update_discord(data):
                 {"name": "Players", "value": data['players'], "inline": True},
                 {"name": "Map", "value": data['map'], "inline": False}
             ],
+            "image":{
+                "url":"https://cdn.discordapp.com/attachments/1494851993154490448/1494852038797037681/5thmrlogo.gif?ex=69e4c5b3&is=69e37433&hm=ae88ec73d1331d799e7fb2e0ca022223710b513ac014aa763776bb9a1597d3c3&"
+            },
             "footer": {"text": "Updated via GitHub Actions"},
             "timestamp": datetime.utcnow().isoformat() + "Z"
         }]
