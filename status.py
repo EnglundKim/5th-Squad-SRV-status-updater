@@ -1,57 +1,70 @@
-import { axios } from "@pipedream/platform"
+import requests
+import os
+from datetime import datetime
 
-export default defineComponent({
-  props: {
-    data: { type: "data_store" },
-  },
-  async run({ steps, $ }) {
-    const webhookUrl = "https://discord.com/api/webhooks/1494834782402514946/DeXK76KOMyEED4cF-uqtxcXEhepk8-3PBNch9SKEilwkgBcL37H9oxk3mr0SITCWnyHn";
+# Haetaan tiedot GitHub Secretsistä
+WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK")
+MESSAGE_ID = os.getenv("MESSAGE_ID").strip()
+SERVER_ID = os.getenv("BATTLEMETRICS_SERVER_ID")
+
+def get_server_data():
+    # Haetaan tiedot BattleMetrics API:sta
+    url = f"https://battlemetrics.com{SERVER_ID}"
+    response = requests.get(url).json()
     
-    // Haetaan alkuperäiset kentät BattleMetrics-viestistä
-    const b = steps.trigger.event.body.embeds[0];
-    const f = b.fields;
+    attr = response['data']['attributes']
+    details = attr.get('details', {})
+    
+    # Valmistellaan tiedot
+    server_name = attr.get('name', 'N/A')
+    status = "Online" if attr.get('status') == "online" else "Offline"
+    players = f"{attr.get('players', 0)}/{attr.get('maxPlayers', 0)}"
+    map_name = details.get('map', 'Unknown')
 
-    // Luodaan uusi viesti englanninkielisillä otsikoilla
-    const payload = {
-      embeds: [{
-        title: "Server Status",
-        color: 5814783,
-        fields: [
-          { name: "Server Name", value: f[0].value },
-          { name: "Status", value: f[1].value, inline: true },
-          { name: "Players", value: f[2].value, inline: true },
-          { name: "Map", value: f[3].value }
-        ],
-        image: {
-          url: "https://cdn.discordapp.com/attachments/1494851993154490448/1494852038797037681/5thmrlogo.gif?ex=69e41cf3&is=69e2cb73&hm=34113ebf686b927466e7b834a97188059ac0f84c63dbdf9440534c1d20be5d4a&"
-        },
-        footer: { text: "Updated" },
-        timestamp: new Date()
-      }]
-    };
-
-    let messageId = await this.data.get("discord_message_id");
-
-    if (!messageId) {
-      const response = await axios($, {
-        method: "POST",
-        url: `${webhookUrl}?wait=true`,
-        data: payload,
-      });
-      await this.data.set("discord_message_id", response.id);
-      return "New message created!";
-    } else {
-      try {
-        await axios($, {
-          method: "PATCH",
-          url: `${webhookUrl}/messages/${messageId}`,
-          data: payload,
-        });
-        return "Message updated!";
-      } catch (error) {
-        await this.data.set("discord_message_id", null);
-        return "Message not found, ID reset.";
-      }
+    return {
+        "name": server_name,
+        "status": status,
+        "players": players,
+        "map": map_name
     }
-  },
-})
+
+def update_discord(data):
+    # Puhdistetaan webhook-osoite varmuuden vuoksi
+    base_url = WEBHOOK_URL.split('?')[0].rstrip('/')
+    edit_url = f"{base_url}/messages/{MESSAGE_ID}"
+    
+    # Käytetään Pipedream-koodisi mukaista ulkoasua
+    payload = {
+        "embeds": [{
+            "title": "Server Status",
+            "color": 5814783,
+            "fields": [
+                {"name": "Server Name", "value": data['name'], "inline": False},
+                {"name": "Status", "value": data['status'], "inline": True},
+                {"name": "Players", "value": data['players'], "inline": True},
+                {"name": "Map", "value": data['map'], "inline": False}
+            ],
+            "image": {
+                "url": "https://discordapp.com&"
+            },
+            "footer": {"text": "Updated"},
+            "timestamp": datetime.utcnow().isoformat()
+        }]
+    }
+
+    response = requests.patch(edit_url, json=payload)
+    
+    if response.status_code == 200:
+        print("✅ Viesti päivitetty onnistuneesti!")
+    else:
+        print(f"❌ Virhe: {response.status_code}")
+        print(f"Vastaus: {response.text}")
+        exit(1)
+
+if __name__ == "__main__":
+    try:
+        server_info = get_server_data()
+        update_discord(server_info)
+    except Exception as e:
+        print(f"Kriittinen virhe: {e}")
+        exit(1)
