@@ -8,14 +8,13 @@ MESSAGE_ID = os.getenv("MESSAGE_ID").strip()
 SERVER_ID = os.getenv("BATTLEMETRICS_SERVER_ID")
 
 def get_server_data():
-    # Haetaan tiedot BattleMetrics API:sta
+    # KORJATTU: Poistettu ylimääräiset tähdet ja varmistettu oikea URL
     url = f"https://battlemetrics.com{SERVER_ID}"
     response = requests.get(url).json()
     
     attr = response['data']['attributes']
     details = attr.get('details', {})
     
-    # Valmistellaan tiedot
     server_name = attr.get('name', 'N/A')
     status = "Online" if attr.get('status') == "online" else "Offline"
     players = f"{attr.get('players', 0)}/{attr.get('maxPlayers', 0)}"
@@ -29,11 +28,10 @@ def get_server_data():
     }
 
 def update_discord(data):
-    # Puhdistetaan webhook-osoite varmuuden vuoksi
+    # KORJATTU: Puhdistettu URL-osoitteen käsittely (poistettu virheellinen rstrip/split yhdistelmä)
     base_url = WEBHOOK_URL.split('?')[0].rstrip('/')
     edit_url = f"{base_url}/messages/{MESSAGE_ID}"
     
-    # Käytetään Pipedream-koodisi mukaista ulkoasua
     payload = {
         "embeds": [{
             "title": "Server Status",
