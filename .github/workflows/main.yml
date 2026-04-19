@@ -5,7 +5,7 @@ permissions:
 
 on:
   schedule:
-    - cron: '* * * * *'   # Ajaa skriptin 1 minuutin välein
+    - cron: '*/5 * * * *'   # Ajaa skriptin 5 minuutin välein
   workflow_dispatch:
 
 jobs:
