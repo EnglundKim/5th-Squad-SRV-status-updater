@@ -33,7 +33,7 @@ def update_discord(data):
         payload = {
             "embeds": [{
                 "title": "Server Status",
-                "color": 5814783,
+                "color": 15548997,
                 "fields": [
                     {"name": "Server Name", "value": data['name'], "inline": False},
                     {"name": "Status", "value": data['status'], "inline": True},
